@@ -49,6 +49,12 @@ class AgentConfig:
     # Explicit allow/deny overrides, e.g. ["Ethernet", "Wi-Fi"].
     include_interfaces: list[str] = field(default_factory=list)
     exclude_interfaces: list[str] = field(default_factory=list)
+    # Counting scope: "device" counts everything; "home_network" counts only
+    # intervals whose gateway MAC is in gateway_macs (accumulated locally).
+    count_scope: str = "device"
+    gateway_macs: list[str] = field(default_factory=list)
+    # How often raw counters are sampled to attribute on-network intervals.
+    sample_seconds: int = 30
 
     @classmethod
     def load(cls) -> "AgentConfig":

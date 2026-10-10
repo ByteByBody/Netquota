@@ -20,6 +20,12 @@ from .collector import collect
 from .config import AgentConfig, platform_name, credential_path
 from .credentials import load_credential
 from .enrollment import enroll, load_credential_for_state
+from .network_scope import (
+    NetworkScope,
+    collect_for_report,
+    current_gateway_mac,
+    normalize_mac,
+)
 from .reporter import ApiClient, ApiError
 from .state import AgentState
 
@@ -34,6 +40,16 @@ def report_once(client: ApiClient, state: AgentState, config: AgentConfig) -> bo
         include=config.include_interfaces,
         exclude=config.exclude_interfaces,
     )
+    if config.count_scope == "home_network":
+        current_mac = current_gateway_mac()
+        collected, scope_state = collect_for_report(
+            config=config,
+            collected=collected,
+            prev_scope_state=state.network_scope,
+            current_mac=current_mac,
+        )
+    else:
+        scope_state = {}
     sequence = state.next_sequence()
     payload = {
         "schema_version": 1,
@@ -65,6 +81,8 @@ def report_once(client: ApiClient, state: AgentState, config: AgentConfig) -> bo
     state.last_report_ok = True
     state.last_error = None
     state.counters = {i.name: [i.bytes_received_total, i.bytes_sent_total] for i in collected.interfaces}
+    if scope_state:
+        state.network_scope = scope_state
     state.save()
     return True
 
@@ -111,6 +129,72 @@ def cmd_once(_args) -> int:
     ok = report_once(client, state, config)
     print("reported" if ok else f"report failed: {state.last_error}")
     return 0 if ok else 1
+
+
+def cmd_detect_gateway(_args) -> int:
+    mac = current_gateway_mac()
+    if mac:
+        print(f"Default gateway MAC: {mac}")
+        return 0
+    print("Could not determine default gateway MAC", file=sys.stderr)
+    return 1
+
+
+def cmd_set_gateway(args) -> int:
+    config = AgentConfig.load()
+    if not args.macs:
+        print("Usage: netquota-agent set-gateway MAC [MAC...]", file=sys.stderr)
+        return 1
+    macs = []
+    for m in args.macs:
+        norm = normalize_mac(m)
+        if not norm:
+            print(f"Invalid MAC: {m}", file=sys.stderr)
+            return 1
+        macs.append(norm)
+    config.gateway_macs = macs
+    config.count_scope = "home_network"
+    config.save()
+    print(f"Set {len(macs)} gateway MAC(s): {', '.join(macs)}")
+    print("Network-scoped counting is now enabled.")
+    return 0
+
+
+def cmd_scope_off(_args) -> int:
+    config = AgentConfig.load()
+    config.count_scope = "device"
+    config.gateway_macs = []
+    config.save()
+    print("Network-scoped counting disabled; counting all traffic.")
+    return 0
+
+
+def cmd_sample(_args) -> int:
+    """Collect raw counters, apply scope rules, print what would be reported."""
+    config = AgentConfig.load()
+    state = AgentState.load()
+    collected = collect(
+        policy=config.interface_policy,
+        include=config.include_interfaces,
+        exclude=config.exclude_interfaces,
+    )
+    if config.count_scope == "home_network":
+        current_mac = current_gateway_mac()
+        collected, scope_state = collect_for_report(
+            config=config,
+            collected=collected,
+            prev_scope_state=state.network_scope,
+            current_mac=current_mac,
+        )
+        print(f"Gateway MAC detected: {current_mac or 'unknown'}")
+        print(f"Scope state: {scope_state.get('prev_matched', False)} matched previous")
+    print("Interfaces:")
+    for i in collected.interfaces:
+        print(f"  {i.name}: rx={i.bytes_received_total} tx={i.bytes_sent_total}")
+    print(f"Scope: {collected.measurement_scope}, quality: {collected.measurement_quality}")
+    for note in collected.notes:
+        print(f"  Note: {note}")
+    return 0
 
 
 def cmd_run(_args) -> int:
@@ -160,6 +244,16 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("run", help="run continuously").set_defaults(func=cmd_run)
     sub.add_parser("once", help="report once").set_defaults(func=cmd_once)
     sub.add_parser("status", help="show status").set_defaults(func=cmd_status)
+
+    sub.add_parser("detect-gateway", help="print current gateway MAC").set_defaults(func=cmd_detect_gateway)
+
+    p_set_gw = sub.add_parser("set-gateway", help="enable home-network counting with gateway MAC(s)")
+    p_set_gw.add_argument("macs", nargs="+", help="MAC address(es) of your gateway(s)")
+    p_set_gw.set_defaults(func=cmd_set_gateway)
+
+    sub.add_parser("scope-off", help="disable home-network counting; count all traffic").set_defaults(func=cmd_scope_off)
+
+    sub.add_parser("sample", help="show what would be reported now (no server call)").set_defaults(func=cmd_sample)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -34,6 +34,9 @@ target platform, [ ] planned.
 - [~] Reporter with retry/backoff + persistent sequence state
 - [~] Secure credential storage (keyring, file fallback)
 - [~] systemd unit + Windows service + install scripts
+- [x] Home-network scoped counting (gateway MAC rule + accumulator)
+- [x] Standalone `netquota-lite.py` (stdlib only, for routers/NAS/Pi)
+- [x] Unit tests for accumulator, parsers, gluing (22 tests)
 
 ## Phase 5 — Dashboard
 - [~] React + TS + Vite + Tailwind + Recharts
@@ -58,7 +61,7 @@ target platform, [ ] planned.
 
 ## Verification
 - [x] Backend test suite green (29 tests, `pytest` in server/)
-- [x] Desktop agent test suite green (7 tests, `pytest` in agents/desktop/)
+- [x] Desktop agent test suite green (29 tests, `pytest` in agents/desktop/)
 - [x] Dashboard TypeScript + production build passes (`npm run build`)
 - [x] OpenAPI contract generated (`shared/openapi/openapi.json`)
 - [x] End-to-end: simulator -> API -> Postgres-shaped accounting -> dashboard summary

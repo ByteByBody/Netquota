@@ -26,6 +26,9 @@ class AgentState:
     # Per-interface cumulative counters at last successful report, used to
     # detect resets even when the OS counter is recreated.
     counters: dict = field(default_factory=dict)
+    # Accumulated on-network counters for count_scope="home_network"
+    # (serialized NetworkScope state).
+    network_scope: dict = field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path | None = None) -> "AgentState":
