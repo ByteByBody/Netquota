@@ -57,6 +57,11 @@ target platform, [ ] planned.
 - [x] Privacy, protocol, architecture, limitations docs
 
 ## Verification
-- [x] Backend test suite green (27 tests)
-- [~] Dashboard production build
-- [~] Desktop agent tests
+- [x] Backend test suite green (29 tests, `pytest` in server/)
+- [x] Desktop agent test suite green (7 tests, `pytest` in agents/desktop/)
+- [x] Dashboard TypeScript + production build passes (`npm run build`)
+- [x] OpenAPI contract generated (`shared/openapi/openapi.json`)
+- [x] End-to-end: simulator -> API -> Postgres-shaped accounting -> dashboard summary
+- [~] Android build + unit tests (no Android SDK in this environment)
+- [~] iOS build + unit tests (no Xcode in this environment)
+- [~] Real Windows/Linux host run of the collector

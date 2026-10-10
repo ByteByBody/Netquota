@@ -1,0 +1,53 @@
+# NetQuota reverse proxy.
+#
+# For a home network, the recommended setup is either:
+#   * a private CA / self-signed cert for the internal hostname, or
+#   * Caddy's internal CA (tls internal) which issues a locally-trusted cert.
+#
+# This file uses Caddy's internal CA by default. Replace with a real domain and
+# remove `tls internal` if you use a public DNS name and ACME.
+
+{$NETQUOTA_DOMAIN:netquota.local} {
+	tls internal
+
+	# Security headers.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	# Agent + admin API. Authentication is enforced by the backend.
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle /health {
+		reverse_proxy api:8000
+	}
+
+	# API documentation (restrict to the local network if desired).
+	handle /docs* {
+		reverse_proxy api:8000
+	}
+
+	handle /openapi.json {
+		reverse_proxy api:8000
+	}
+
+	# Serve the built dashboard (copied into caddy's site root, or proxied to a
+	# static host). Build it with `npm run build` in apps/dashboard and copy
+	# dist/ to the location below.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stderr
+		format console
+	}
+}

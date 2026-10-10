@@ -1,0 +1,51 @@
+name: NetQuota
+options:
+  bundleIdPrefix: com.netquota
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: NO
+
+targets:
+  NetQuota:
+    type: application
+    platform: iOS
+    sources:
+      - path: NetQuota
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.netquota.agent
+        INFOPLIST_FILE: NetQuota/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: NetQuota/NetQuota.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+  NetQuotaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: NetQuotaTests
+    dependencies:
+      - target: NetQuota
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.netquota.agent.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  NetQuota:
+    build:
+      targets:
+        NetQuota: all
+        NetQuotaTests: [test]
+    test:
+      targets:
+        - NetQuotaTests

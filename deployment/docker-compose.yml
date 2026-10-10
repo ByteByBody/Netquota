@@ -1,0 +1,72 @@
+# NetQuota local deployment.
+#
+#   cd deployment
+#   cp .env.example .env        # then edit secrets
+#   docker compose up -d --build
+#
+# Services:
+#   db     PostgreSQL (not published to the host network)
+#   api    FastAPI backend
+#   caddy  TLS reverse proxy (HTTPS on 443, HTTP on 80)
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-netquota}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-netquota}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    # Intentionally NOT published to the host: only the api container reaches it.
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-netquota} -d ${POSTGRES_DB:-netquota}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ../server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NETQUOTA_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-netquota}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-netquota}
+      NETQUOTA_JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      NETQUOTA_ENVIRONMENT: production
+      NETQUOTA_ADMIN_BOOTSTRAP_USERNAME: ${ADMIN_USERNAME:-admin}
+      NETQUOTA_ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      NETQUOTA_STALE_AFTER_MINUTES: ${STALE_AFTER_MINUTES:-30}
+    volumes:
+      - api_data:/data
+    expose:
+      - "8000"
+    # Bind only to the loopback of the host for direct debugging; Caddy fronts it.
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      NETQUOTA_DOMAIN: ${NETQUOTA_DOMAIN:-netquota.local}
+
+volumes:
+  db_data:
+  api_data:
+  caddy_data:
+  caddy_config:

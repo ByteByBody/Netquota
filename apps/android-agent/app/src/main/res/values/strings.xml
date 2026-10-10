@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">NetQuota</string>
+    <string name="consent_title">Monitor this phone\'s data usage</string>
+</resources>

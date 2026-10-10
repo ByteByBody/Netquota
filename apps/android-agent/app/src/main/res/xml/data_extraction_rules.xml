@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Credentials and state are stored in Keystore-backed encrypted storage, so
+     exclude them from cloud/device backups. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="netquota_secure_prefs.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="netquota_secure_prefs.xml" />
+    </device-transfer>
+</data-extraction-rules>
