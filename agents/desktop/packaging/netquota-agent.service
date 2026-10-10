@@ -1,0 +1,25 @@
+[Unit]
+Description=NetQuota usage agent
+Documentation=https://github.com/your-org/netquota
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# The agent is enrolled by the device administrator, not root, so it runs as a
+# normal user with access to that user's credential store.
+User=netquota
+Group=netquota
+Environment=NETQUOTA_AGENT_CONFIG_DIR=/var/lib/netquota
+ExecStart=/usr/local/bin/netquota-agent run
+Restart=on-failure
+RestartSec=15
+# Best-effort hardening.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/lib/netquota
+
+[Install]
+WantedBy=multi-user.target
