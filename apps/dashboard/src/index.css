@@ -1,0 +1,72 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light theme surfaces */
+  --surface: 255 255 255;
+  --line: 224 229 235;
+  --muted: 91 103 116;
+  --faint: 140 151 162;
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+  --surface: 23 31 39;
+  --line: 42 52 62;
+  --muted: 154 166 178;
+  --faint: 108 120 132;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-paper text-ink antialiased font-sans;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgb(var(--line) / 0.55) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+.dark body {
+  @apply bg-[#0F1519] text-[#E8EDF2];
+  background-image:
+    radial-gradient(circle at 1px 1px, rgb(var(--line) / 0.4) 1px, transparent 0);
+}
+
+/* Tabular figures wherever numbers are compared vertically. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+:focus-visible {
+  outline: 2px solid #0E9F8E;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--line));
+  border-radius: 999px;
+}

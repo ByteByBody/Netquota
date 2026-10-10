@@ -1,0 +1,15 @@
+# Built assets
+dist
+
+# Dependencies
+node_modules
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode
+.idea
+*.local

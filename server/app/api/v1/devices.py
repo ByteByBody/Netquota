@@ -76,3 +76,39 @@ async def revoke(
     from ...services.devices import device_to_out
 
     return await device_to_out(session, device)
+
+
+@router.get("/devices/{device_id}/usage")
+async def device_usage(
+    device_id: str,
+    admin: AdminUser = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    device = await session.get(Device, device_id)
+    if device is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "device not found")
+    from ...services.dashboard import usage_series
+    from ...services.groups import get_active_group
+    from ...services.quotas import get_or_create_period
+
+    group = await get_active_group(session, device.id)
+    if group is None:
+        return {"device_id": device.id, "series": [], "summary": None}
+    period = await get_or_create_period(session, group)
+    series = await usage_series(
+        session,
+        device_id=device.id,
+        starts_at=period.starts_at,
+        ends_at=period.ends_at,
+    )
+    used = sum(p.total_bytes for p in series)
+    return {
+        "device_id": device.id,
+        "group_id": group.id,
+        "series": [p.model_dump(mode="json") for p in series],
+        "summary": {
+            "used_bytes": used,
+            "period_starts_at": period.starts_at.isoformat(),
+            "period_ends_at": period.ends_at.isoformat(),
+        },
+    }

@@ -1,0 +1,17 @@
+{
+  "name": "NetQuota",
+  "short_name": "NetQuota",
+  "description": "Household internet usage and group quota monitoring.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F1519",
+  "theme_color": "#0E9F8E",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
