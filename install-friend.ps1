@@ -136,28 +136,26 @@ if (Test-Path $ConfigPath) {
     Write-Warn "Config not found at $ConfigPath (will be created on first run)"
 }
 
-# ---- 7. Auto-start (optional) ----
-if (-not $NoAutoStart) {
-    Write-Step "Installing auto-start on login"
-    $StartupScript = @"
-@echo off
-cd /d $InstallPath\agents\desktop
-call .venv\Scripts\activate.bat
-netquota-agent run
-"@
-    $BatPath = Join-Path $InstallPath "agents\desktop\run-agent.bat"
-    $StartupScript | Set-Content $BatPath -Encoding ASCII
+# ---- 7. net-quota command + auto-start (hidden) ----
+Write-Step "Installing net-quota command"
+$NetQuota = Join-Path $InstallPath "bin\net-quota.ps1"
+$Vbs      = Join-Path $InstallPath "bin\net-quota-hidden.vbs"
+if (-not (Test-Path $NetQuota)) {
+    Write-Warn "net-quota.ps1 not found at $NetQuota (repo may be outdated); skipping."
+} else {
+    $NqArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $NetQuota, 'install', '-Role', 'agent')
+    if (-not $NoAutoStart) { $NqArgs += '-Startup' }
+    & powershell.exe @NqArgs
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warn "net-quota install returned exit code $LASTEXITCODE"
+    } else {
+        Write-OK "net-quota command installed (agent role)"
+        if (-not $NoAutoStart) { Write-OK "Hidden auto-start installed (runs on next login)" }
+    }
 
-    $StartupDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup"
-    $ShortcutPath = Join-Path $StartupDir "NetQuota Agent.lnk"
-    $Wsh = New-Object -ComObject WScript.Shell
-    $Sc = $Wsh.CreateShortcut($ShortcutPath)
-    $Sc.TargetPath = "cmd.exe"
-    $Sc.Arguments = "/c `"$BatPath`""
-    $Sc.WorkingDirectory = Join-Path $InstallPath "agents\desktop"
-    $Sc.Description = "NetQuota Agent - starts on login"
-    $Sc.Save()
-    Write-OK "Auto-start installed (runs on next login)"
+    # Remove the old visible agent shortcut if a previous install made one.
+    $OldLnk = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup\NetQuota Agent.lnk"
+    if (Test-Path $OldLnk) { Remove-Item -Force $OldLnk; Write-OK "Removed old visible auto-start shortcut" }
 }
 
 # ---- 8. Test sample ----
@@ -170,12 +168,24 @@ if ($LASTEXITCODE -ne 0) {
     Write-OK "Sample OK"
 }
 
-# ---- 9. Start agent now ----
-Write-Step "Starting agent (runs in a separate window)"
-Start-Process "cmd.exe" -ArgumentList "/k", "cd /d `"$InstallPath\agents\desktop`" && call .venv\Scripts\activate.bat && netquota-agent run" -WorkingDirectory (Join-Path $InstallPath "agents\desktop")
+# ---- 9. Start now (hidden, supervised) ----
+Write-Step "Starting NetQuota (hidden, supervised)"
+if (Test-Path $Vbs) {
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $NetQuota run -Once
+    Start-Process -FilePath 'wscript.exe' -ArgumentList "`"$Vbs`""
+    Start-Sleep -Seconds 4
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $NetQuota status
+} else {
+    Write-Warn "Hidden launcher missing; start the agent manually: netquota-agent run"
+}
 
 Write-Host "`n=== INSTALL COMPLETE ===" -ForegroundColor Green
 Write-Host "Device enrolled and reporting every 5s."
-Write-Host "Dashboard (on the host PC): $ServerUrl  ->  open port 5173 for the UI"
-Write-Host "Agent window opened - leave it running."
-Write-Host "Auto-start: runs on next login." -ForegroundColor Cyan
+Write-Host "This PC runs the NetQuota agent hidden and supervised - nothing to leave open."
+Write-Host ""
+Write-Host "Commands (open a NEW cmd window first so PATH is refreshed):" -ForegroundColor Cyan
+Write-Host "  net-quota status   show what is running"
+Write-Host "  net-quota stop     stop everything"
+Write-Host "  net-quota run      start it again"
+Write-Host ""
+Write-Host "Auto-start: runs hidden on next login." -ForegroundColor Cyan

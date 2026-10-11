@@ -59,6 +59,15 @@ target platform, [ ] planned.
 - [x] Backups / recovery docs
 - [x] Privacy, protocol, architecture, limitations docs
 
+## Phase 9 — Home deployment (Windows host + roommate)
+- [x] One-command `net-quota` supervisor (`run` / `stop` / `status` / `install`)
+- [x] Hidden auto-start at login via VBS launcher (no console windows)
+- [x] Components run hidden, auto-restart if closed, logs under `%ProgramData%\NetQuota\logs`
+- [x] Single-instance guard so a second supervisor can't double-start components
+- [x] Backend + dashboard bound to the LAN (`0.0.0.0`); firewall rules for 8000 / 5173
+- [x] Roommate enrollment verified over the LAN
+- [x] `install-friend.ps1` sets role=agent, adds `net-quota` to PATH, hidden auto-start
+
 ## Verification
 - [x] Backend test suite green (29 tests, `pytest` in server/)
 - [x] Desktop agent test suite green (29 tests, `pytest` in agents/desktop/)

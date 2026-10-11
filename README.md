@@ -53,6 +53,25 @@ python scripts/seed_demo.py --password changeme
 
 Sign in at http://127.0.0.1:5173 with `admin` / `changeme`.
 
+## One-command launcher (Windows home setup)
+
+For a Windows host with a roommate on the same LAN, the `bin` helpers install a
+single `net-quota` command:
+
+```bat
+net-quota run                :: start the stack and keep it alive (hidden)
+net-quota status             :: show what is running
+net-quota stop               :: stop everything
+net-quota install -Startup   :: add to PATH and auto-start (hidden) at login
+```
+
+On the **host** the role is `host` (backend :8000 + dashboard :5173 + agent); on a
+**friend/roommate** PC the role is `agent` (the reporting agent only), installed by
+`install-friend.ps1`. Components run hidden, are restarted automatically if they
+close, and log to `%ProgramData%\NetQuota\logs`. `start-netquota.bat` and
+`install-startup.bat` are thin wrappers around these commands, and the login
+auto-start is a hidden launcher (`bin\net-quota-hidden.vbs`) — no console windows.
+
 ## Quick start (home server, Docker)
 
 ```sh
