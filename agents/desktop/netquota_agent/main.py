@@ -205,7 +205,7 @@ def cmd_run(_args) -> int:
     print(f"NetQuota agent {__version__} running; interval={config.interval_seconds}s")
     while True:
         report_once(client, state, config)
-        time.sleep(max(30, config.interval_seconds))
+        time.sleep(config.interval_seconds)
 
 
 def cmd_status(_args) -> int:
