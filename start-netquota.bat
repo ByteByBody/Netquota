@@ -11,7 +11,8 @@ start "NetQuota Backend" cmd /k "
     call %VENV%\Scripts\activate.bat
     set NETQUOTA_DATABASE_URL=sqlite+aiosqlite:///./netquota.db
     set NETQUOTA_ADMIN_BOOTSTRAP_PASSWORD=changeme
-    uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+    REM Bind 0.0.0.0 so LAN agents can enroll/report; dashboard proxies via 127.0.0.1.
+    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 "
 
 REM Wait a moment for backend to be ready
