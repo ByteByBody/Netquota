@@ -306,9 +306,11 @@ public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, UIntPtr wP
         $sc.Save()
         Write-Host "Installed hidden auto-start: $lnk" -ForegroundColor Green
 
-        # Remove the old visible auto-start shortcut if present.
-        $old = Join-Path $startupDir 'NetQuota Auto-Start.lnk'
-        if (Test-Path $old) { Remove-Item -Force $old; Write-Host "Removed old visible shortcut: $old" }
+        # Remove any legacy visible auto-start shortcuts.
+        foreach ($legacy in @('NetQuota Auto-Start.lnk', 'NetQuota Agent.lnk')) {
+            $old = Join-Path $startupDir $legacy
+            if (Test-Path $old) { Remove-Item -Force $old; Write-Host "Removed old visible shortcut: $old" }
+        }
     }
 
     Write-Host "Role set to '$r'." -ForegroundColor Green
