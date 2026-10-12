@@ -83,16 +83,29 @@ adds a `NetQuota.lnk` to the Startup folder. The login instance runs with **no
 console window**. Components are restarted automatically if they close and log to
 `%ProgramData%\NetQuota\logs`.
 
-**Roommate's PC:** send them only `net-quota.exe` and have them run:
+**Building the exe is not needed to install it** — download the latest release
+asset instead ([releases](https://github.com/ByteByBody/Netquota/releases/latest)):
 
 ```bat
-net-quota.exe install -Role agent -Startup
+curl.exe -L -o "%TEMP%\net-quota.exe" https://github.com/ByteByBody/Netquota/releases/latest/download/net-quota.exe
+"%TEMP%\net-quota.exe" install -Role host -Startup      :: host PC
+```
+
+**Roommate's PC:** send them only that first `curl` line plus:
+
+```bat
+"%TEMP%\net-quota.exe" install -Role agent -Startup
 ```
 
 They need no Python, git, or repository — the agent is bundled. An already-enrolled
 PC keeps its device identity (the credential under `%ProgramData%\NetQuota` is
 reused), so no new enrollment code is required. The agent is disclosed and
 monitoring-only: it never blocks, throttles, or disconnects traffic.
+
+The exe is unsigned, so SmartScreen may warn on first run — choose **More info →
+Run anyway**. Run the installer as the normal user; if a previous install was done
+as Administrator and `%ProgramData%\NetQuota` is not writable, re-run it from an
+Administrator window.
 
 ## Quick start (home server, Docker)
 
