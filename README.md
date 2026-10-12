@@ -55,22 +55,44 @@ Sign in at http://127.0.0.1:5173 with `admin` / `changeme`.
 
 ## One-command launcher (Windows home setup)
 
-For a Windows host with a roommate on the same LAN, the `bin` helpers install a
-single `net-quota` command:
+For a Windows host with a roommate on the same LAN, build the single
+self-contained launcher:
 
-```bat
-net-quota run                :: start the stack and keep it alive (hidden)
-net-quota status             :: show what is running
-net-quota stop               :: stop everything
-net-quota install -Startup   :: add to PATH and auto-start (hidden) at login
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\build-exe.ps1
+# -> dist\net-quota.exe
 ```
 
-On the **host** the role is `host` (backend :8000 + dashboard :5173 + agent); on a
-**friend/roommate** PC the role is `agent` (the reporting agent only), installed by
-`install-friend.ps1`. Components run hidden, are restarted automatically if they
-close, and log to `%ProgramData%\NetQuota\logs`. `start-netquota.bat` and
-`install-startup.bat` are thin wrappers around these commands, and the login
-auto-start is a hidden launcher (`bin\net-quota-hidden.vbs`) — no console windows.
+`net-quota.exe` bundles the agent and supervises the stack. It is role-aware via
+`%ProgramData%\NetQuota\role.txt`:
+
+* **host** — backend (`:8000`) + dashboard (`:5173`) + the local agent
+* **agent** — just the reporting agent (for a roommate's PC)
+
+```bat
+net-quota run                            :: start the role's components, keep them alive
+net-quota status                         :: show what is running
+net-quota stop                           :: stop everything
+net-quota install -Role host  -Startup   :: host: install + auto-start at login
+net-quota install -Role agent -Startup   :: roommate: install + auto-start at login
+```
+
+`install` copies the exe to `%ProgramData%\NetQuota\net-quota.exe`, puts that
+folder on your `PATH`, records the role and repo location, and (with `-Startup`)
+adds a `NetQuota.lnk` to the Startup folder. The login instance runs with **no
+console window**. Components are restarted automatically if they close and log to
+`%ProgramData%\NetQuota\logs`.
+
+**Roommate's PC:** send them only `net-quota.exe` and have them run:
+
+```bat
+net-quota.exe install -Role agent -Startup
+```
+
+They need no Python, git, or repository — the agent is bundled. An already-enrolled
+PC keeps its device identity (the credential under `%ProgramData%\NetQuota` is
+reused), so no new enrollment code is required. The agent is disclosed and
+monitoring-only: it never blocks, throttles, or disconnects traffic.
 
 ## Quick start (home server, Docker)
 

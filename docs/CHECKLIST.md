@@ -60,17 +60,22 @@ target platform, [ ] planned.
 - [x] Privacy, protocol, architecture, limitations docs
 
 ## Phase 9 — Home deployment (Windows host + roommate)
-- [x] One-command `net-quota` supervisor (`run` / `stop` / `status` / `install`)
-- [x] Hidden auto-start at login via VBS launcher (no console windows)
-- [x] Components run hidden, auto-restart if closed, logs under `%ProgramData%\NetQuota\logs`
-- [x] Single-instance guard so a second supervisor can't double-start components
+- [x] Single self-contained `net-quota.exe` launcher (`run` / `stop` / `status` / `install`)
+- [x] Role-aware: `host` supervises backend + dashboard + agent; `agent` runs the bundled agent only
+- [x] Bundled agent, so an agent-only PC needs no Python/git and keeps its existing enrollment
+- [x] Auto-start at login via a Startup shortcut that opens no console window
+- [x] Components run in the background, auto-restart if closed, log to `%ProgramData%\NetQuota\logs`
+- [x] Single-instance mutex so a second supervisor can't double-start components
 - [x] Backend + dashboard bound to the LAN (`0.0.0.0`); firewall rules for 8000 / 5173
 - [x] Roommate enrollment verified over the LAN
-- [x] `install-friend.ps1` sets role=agent, adds `net-quota` to PATH, hidden auto-start
+- [x] Login shortcut created with a plain COM `IShellLink` (no `wscript`/VBS dependency)
+- [x] Launcher tests: path/role resolution, component plan, supervisor loop, process selectors
 
 ## Verification
 - [x] Backend test suite green (29 tests, `pytest` in server/)
 - [x] Desktop agent test suite green (29 tests, `pytest` in agents/desktop/)
+- [x] Launcher test suite green (`pytest` in tools/tests)
+- [x] `dist\net-quota.exe` built and installed on the host (backend + dashboard + agent up, reporting every ~6s)
 - [x] Dashboard TypeScript + production build passes (`npm run build`)
 - [x] OpenAPI contract generated (`shared/openapi/openapi.json`)
 - [x] End-to-end: simulator -> API -> Postgres-shaped accounting -> dashboard summary
