@@ -1,5 +1,7 @@
 """Tests for launcher path/role resolution."""
 
+import os
+import stat
 from pathlib import Path
 
 from netquota_launcher import paths
@@ -67,3 +69,30 @@ def test_launcher_config_round_trips_repo_root(tmp_path):
     paths.write_launcher_config(tmp_path, cfg)
     loaded = paths.read_launcher_config(tmp_path)
     assert loaded.repo_root == tmp_path / "repo"
+
+
+def test_resilient_write_creates_and_overwrites(tmp_path):
+    target = tmp_path / "role.txt"
+    assert paths.write_text_resilient(target, "agent") is True
+    assert target.read_text(encoding="utf-8") == "agent"
+    assert paths.write_text_resilient(target, "host") is True
+    assert target.read_text(encoding="utf-8") == "host"
+
+
+def test_resilient_write_leaves_an_already_correct_file_untouched(tmp_path):
+    target = tmp_path / "role.txt"
+    # A previous PowerShell install wrote the value with a trailing newline.
+    target.write_bytes(b"agent\r\n")
+    assert paths.write_text_resilient(target, "agent") is True
+    assert target.read_bytes() == b"agent\r\n"
+
+
+def test_resilient_write_recovers_from_a_read_only_file(tmp_path):
+    target = tmp_path / "role.txt"
+    target.write_text("agent", encoding="utf-8")
+    os.chmod(target, stat.S_IREAD)
+    try:
+        assert paths.write_text_resilient(target, "host") is True
+        assert target.read_text(encoding="utf-8") == "host"
+    finally:
+        os.chmod(target, stat.S_IWRITE | stat.S_IREAD)

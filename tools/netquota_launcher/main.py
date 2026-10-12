@@ -368,7 +368,7 @@ def cmd_install(args) -> int:
         print("Dev mode: not copying the exe or writing a login shortcut.")
         start_argv = [str(Path(sys.executable)), "-m", "netquota_launcher", "run", "-Background"]
 
-    paths.role_file(data).write_text(role, encoding="utf-8")
+    paths.write_text_resilient(paths.role_file(data), role, label="role")
     paths.write_launcher_config(data, paths.LauncherConfig(repo_root=repo))
     print(f"Role set to '{role}'.")
     if repo:

@@ -9,10 +9,60 @@ from __future__ import annotations
 import json
 import os
 import platform
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 
 _ROLES = ("host", "agent")
+
+
+def write_text_resilient(path: Path, text: str, *, label: str | None = None) -> bool:
+    """Write *text* to *path*, tolerating a file the current user can't overwrite.
+
+    A previous install run as Administrator can leave files that the current
+    user may not rewrite. This makes re-running ``install`` safe:
+
+    * if the file already holds the wanted value, do nothing;
+    * otherwise clear the read-only attribute and retry;
+    * otherwise delete and recreate.
+
+    Returns True if the file now holds *text*, False if it could not be written
+    (a warning is printed and the caller keeps going).
+    """
+    path = Path(path)
+    label = label or path.name
+    try:
+        if path.exists():
+            current = path.read_text(encoding="utf-8", errors="replace")
+            if current.strip() == text.strip():
+                return True
+    except OSError:
+        pass
+
+    for attempt in range(3):
+        try:
+            path.write_text(text, encoding="utf-8")
+            return True
+        except PermissionError:
+            if attempt == 0:
+                try:
+                    os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+                except OSError:
+                    pass
+            else:
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
+        except OSError as exc:
+            print(f"Warning: could not write {label} ({path}): {exc}")
+            return False
+
+    print(
+        f"Warning: could not update {label} ({path}). "
+        "If the value is wrong, re-run this command in an Administrator window."
+    )
+    return False
 
 
 def data_dir() -> Path:
@@ -88,6 +138,8 @@ def write_launcher_config(data: Path, config: LauncherConfig) -> None:
     data = Path(data)
     data.mkdir(parents=True, exist_ok=True)
     payload = {"repo_root": str(config.repo_root) if config.repo_root else None}
-    launcher_config_path(data).write_text(
-        json.dumps(payload, indent=2), encoding="utf-8"
+    write_text_resilient(
+        launcher_config_path(data),
+        json.dumps(payload, indent=2),
+        label="launcher config",
     )
